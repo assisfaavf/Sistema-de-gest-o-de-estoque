@@ -52,7 +52,9 @@ class homeView:
 
     #Fornecedores
     elif self.page.drawer.selected_index == 2:
-      ...
+      from app.views.supplier_view import supplierView
+      supplier_view = supplierView(self.page)
+      supplier_view.build()
 
     #Estoque
     elif self.page.drawer.selected_index == 3:
