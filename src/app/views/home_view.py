@@ -58,7 +58,9 @@ class homeView:
 
     #Estoque
     elif self.page.drawer.selected_index == 3:
-      ...
+      from app.views.stock_view import stockView
+      stock_view = stockView(self.page)
+      stock_view.build()
     
     #Sair
     elif self.page.drawer.selected_index == 4:
