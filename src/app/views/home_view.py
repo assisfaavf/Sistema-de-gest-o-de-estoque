@@ -10,7 +10,8 @@ class homeView:
     self.page.drawer = ft.NavigationDrawer( #Cria a gaveta lateral de opções
       controls = [
         ft.Container(height=50),
-        ft.NavigationDrawerDestination(icon=ft.Icons.HOME, label="DashBoard"),
+        ft.NavigationDrawerDestination(icon=ft.Icons.HOME, label="Home"),
+        ft.NavigationDrawerDestination(icon=ft.Icons.DASHBOARD, label="DashBoard"),
         ft.NavigationDrawerDestination(icon=ft.Icons.INVENTORY, label="Produtos"),
         ft.NavigationDrawerDestination(icon=ft.Icons.LOCAL_SHIPPING, label="Fornecedores"),
         ft.NavigationDrawerDestination(icon=ft.Icons.STORAGE, label="Estoque"),
@@ -40,28 +41,34 @@ class homeView:
 
 
   def _navigate(self, e):
-    #Dashboard
+    #Home
     if self.page.drawer.selected_index == 0:
       ...
+    
+    #Dashboard
+    elif self.page.drawer.selected_index == 1:
+      from app.views.dashboard_view import DashboardView #Importa a classe
+      dashborad_view = DashboardView(self.page) #Cria uma instância da classe
+      dashborad_view.build() #Executa a função build da classe 
 
     #Produtos
-    elif self.page.drawer.selected_index == 1:
+    elif self.page.drawer.selected_index == 2:
       from app.views.product_view import productsView
       products_view = productsView(self.page)
       products_view.build()
 
     #Fornecedores
-    elif self.page.drawer.selected_index == 2:
+    elif self.page.drawer.selected_index == 3:
       from app.views.supplier_view import supplierView
       supplier_view = supplierView(self.page)
       supplier_view.build()
 
     #Estoque
-    elif self.page.drawer.selected_index == 3:
+    elif self.page.drawer.selected_index == 4:
       from app.views.stock_view import stockView
       stock_view = stockView(self.page)
       stock_view.build()
-    
+
     #Sair
-    elif self.page.drawer.selected_index == 4:
+    elif self.page.drawer.selected_index == 5:
       ...
