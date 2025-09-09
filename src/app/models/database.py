@@ -28,8 +28,9 @@ def create_table():
       CREATE TABLE IF NOT EXISTS produtos (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
-          price REAL NOT NULL,
-          quantidade INTEGER NOT NULL  
+          unit TEXT NOT NULL,
+          quantidade INTEGER NOT NULL,  
+          price REAL NOT NULL
           )
     """)
 

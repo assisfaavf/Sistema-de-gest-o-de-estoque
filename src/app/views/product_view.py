@@ -6,8 +6,9 @@ class productsView:
   def __init__(self, page:ft.Page):
     self.page = page
     self.product_name = ft.TextField(label="Nome do produto")
-    self.product_price = ft.TextField(label="Preço do produto")
+    self.product_unit = ft.TextField(label="Unidade do produto")
     self.product_quantity = ft.TextField(label="Quantidade do produto", on_submit=self._register_product)
+    self.product_price = ft.TextField(label="Preço do produto")
     self.list_products_view = ft.ListView()
 
 
@@ -23,8 +24,9 @@ class productsView:
     self.page.add(
       ft.Column([
         self.product_name,
-        self.product_price,
+        self.product_unit,
         self.product_quantity,
+        self.product_price,
         ft.Row([
           ft.ElevatedButton(text="Cadastrar produto", on_click=self._register_product)
       ], alignment=ft.MainAxisAlignment.CENTER),
@@ -42,6 +44,7 @@ class productsView:
 
   def _register_product(self, e):
     name = self.product_name.value.strip()
+    unit = self.product_unit.value.strip()
     try: #Garante que os dados de preço e quantidade são em formato de número
       price = float(self.product_price.value.strip())
       quantity = int(self.product_quantity.value.strip())
@@ -50,20 +53,21 @@ class productsView:
       print('O preço e a quantidade devem ser números!')
       return
     
-    if not name: #Verifica se o campo de nome foi preencido (Não é necessário para o preço e quantidade pois a verificação anterior garante que foram preenchidos)
+    if not name or not unit: #Verifica se o campo de nome e unidade foi preencido (Não é necessário para o preço e quantidade pois a verificação anterior garante que foram preenchidos)
       print('Preencha o nome do produto!')
       return
     
     with get_connection() as conn:
       cursor = conn.cursor()
-      cursor.execute('INSERT INTO produtos (name, price, quantidade) VALUES (?, ?, ?)', (name, price, quantity))
+      cursor.execute('INSERT INTO produtos (name, unit, quantidade, price) VALUES (?, ?, ?, ?)', (name, unit, quantity, price))
       conn.commit()
 
       print('Produto cadastrado com sucesso!')
 
       self.product_name.value = ""
-      self.product_price.value = ""
+      self.product_unit.value = ""
       self.product_quantity.value = ""
+      self.product_price.value = ""
       self.product_list()
       self.page.update()
   
@@ -72,13 +76,13 @@ class productsView:
 
     with get_connection() as conn:
       cursor = conn.cursor()
-      cursor.execute('SELECT name, price, quantidade FROM produtos')
+      cursor.execute('SELECT name, unit, quantidade, price FROM produtos')
 
-      for name, price, quantidade in cursor.fetchall():
+      for name, unit, quantidade,  price in cursor.fetchall():
         self.list_products_view.controls.append(
           ft.ListTile(
             title=ft.Text(f"{name}"),
-            subtitle=ft.Text(f"Preço: R${price:.2f} | Quantidade: {quantidade}")
+            subtitle=ft.Text(f"Unidade: {unit} | Quantidade: {quantidade} | Preço: R${price:.2f}")
           )
         )
     
