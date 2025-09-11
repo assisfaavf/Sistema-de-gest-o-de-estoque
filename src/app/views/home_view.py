@@ -14,7 +14,7 @@ class homeView:
         ft.NavigationDrawerDestination(icon=ft.Icons.DASHBOARD, label="DashBoard"),
         ft.NavigationDrawerDestination(icon=ft.Icons.INVENTORY, label="Produtos"),
         ft.NavigationDrawerDestination(icon=ft.Icons.LOCAL_SHIPPING, label="Fornecedores"),
-        ft.NavigationDrawerDestination(icon=ft.Icons.STORAGE, label="Estoque"),
+        ft.NavigationDrawerDestination(icon=ft.Icons.COMPARE_ARROWS, label="Entrada/Saída"),
         ft.NavigationDrawerDestination(icon=ft.Icons.LOGOUT, label="Sair"),
       ]
     )
@@ -63,7 +63,7 @@ class homeView:
       supplier_view = supplierView(self.page)
       supplier_view.build()
 
-    #Estoque
+    #Entrada/Saída
     elif self.page.drawer.selected_index == 4:
       from app.views.stock_view import stockView
       stock_view = stockView(self.page)

@@ -2,126 +2,86 @@ import flet as ft
 import pandas as pd
 from ..models.database import get_connection
 
+
 class productsView:
     def __init__(self, page: ft.Page):
         self.page = page
-        self.product_name = ft.TextField(label="Nome do produto")
-        self.product_unit = ft.TextField(label="Unidade do produto")
-        self.product_quantity = ft.TextField(label="Quantidade do produto", on_submit=self._register_product)
-        self.product_price = ft.TextField(label="Preço do produto")
-        self.list_products_view = ft.ListView()
+        self.search_field = ft.TextField(
+            label="Pesquisar produto",
+            prefix_icon=ft.Icons.SEARCH,
+            on_change=self._filter_products,
+            expand=True
+        )
+        self.list_products_view = ft.ListView(expand=True)
 
-        # Criar o FilePicker
-        self.file_picker = ft.FilePicker(on_result=self._import_from_csv)
-        self.page.overlay.append(self.file_picker)
+        # lista completa de produtos
+        self.all_products = []
 
     def build(self):
         self.page.controls.clear()
 
         self.page.appbar = ft.AppBar(
-            title=ft.Text('Cadastro de Produtos', size=24, weight="bold"),
-            leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self._go_back())
+            title=ft.Text('Produtos em estoque', size=24, weight="bold"),
+            leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self._go_back()),
+            actions=[
+                ft.IconButton(ft.Icons.ADD, tooltip="Cadastrar produto", on_click=lambda e: self._go_to_register(), icon_size=40)
+            ]
         )
 
         self.page.add(
-            ft.Column([
-                self.product_name,
-                self.product_unit,
-                self.product_quantity,
-                self.product_price,
-                ft.Row([
-                    ft.ElevatedButton(text="Cadastrar produto", on_click=self._register_product),
-                    ft.ElevatedButton(text="Importar CSV", on_click=lambda e: self.file_picker.pick_files(
-                        allow_multiple=False,
-                        file_type=ft.FilePickerFileType.CUSTOM,
-                        allowed_extensions=["csv"]
-                    ))
-                ], alignment=ft.MainAxisAlignment.CENTER),
-                ft.Divider(),
-                ft.Text("Produtos cadastrados", size=20, weight="bold"),
-                self.list_products_view,
-            ], expand=True, scroll=ft.ScrollMode.AUTO)
+            ft.Column(
+                [
+                    self.search_field,
+                    self.list_products_view,
+                ],
+                expand=True,
+                scroll=ft.ScrollMode.AUTO,
+            )
         )
 
         self.product_list()
         self.page.update()
 
-    # Função de cadastro manual (já existia)
-    def _register_product(self, e):
-        name = self.product_name.value.strip()
-        unit = self.product_unit.value.strip()
-        try:
-            price = float(self.product_price.value.strip())
-            quantity = int(self.product_quantity.value.strip())
-        except:
-            print('O preço e a quantidade devem ser números!')
-            return
-
-        if not name or not unit:
-            print('Preencha o nome e a unidade do produto!')
-            return
-
-        with get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute('INSERT INTO produtos (name, unit, quantidade, price) VALUES (?, ?, ?, ?)',
-                           (name, unit, quantity, price))
-            conn.commit()
-
-        print('Produto cadastrado com sucesso!')
-
-        self.product_name.value = ""
-        self.product_unit.value = ""
-        self.product_quantity.value = ""
-        self.product_price.value = ""
-        self.product_list()
-        self.page.update()
-
-    # Função para listar produtos
+    # lista apenas produtos com quantidade > 0
     def product_list(self):
         self.list_products_view.controls.clear()
 
         with get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute('SELECT name, unit, quantidade, price FROM produtos')
+            cursor.execute('SELECT name, unit, quantidade, price FROM produtos WHERE quantidade > 0')
 
-            for name, unit, quantidade, price in cursor.fetchall():
-                self.list_products_view.controls.append(
-                    ft.ListTile(
-                        title=ft.Text(f"{name}"),
-                        subtitle=ft.Text(f"Unidade: {unit} | Quantidade: {quantidade} | Preço: R${price:.2f}")
+            self.all_products = [
+                {"name": name, "unit": unit, "quantidade": quantidade, "price": price}
+                for name, unit, quantidade, price in cursor.fetchall()
+            ]
+
+        self._update_list(self.all_products)
+
+    # renderiza a lista
+    def _update_list(self, products):
+        self.list_products_view.controls.clear()
+        for p in products:
+            self.list_products_view.controls.append(
+                ft.Card(
+                    content=ft.ListTile(
+                        title=ft.Text(p['name']),
+                        subtitle=ft.Text(f"Unidade: {p['unit']} | Quantidade: {p['quantidade']} | Preço: R${p['price']:.2f}")
                     )
                 )
-
+            )
         self.page.update()
 
-    # Função para importar CSV
-    def _import_from_csv(self, e: ft.FilePickerResultEvent):
-        if not e.files:
-            return
+    # filtra produtos pelo nome digitado
+    def _filter_products(self, e):
+        query = self.search_field.value.lower()
+        filtered = [p for p in self.all_products if query in p['name'].lower()]
+        self._update_list(filtered)
 
-        file_path = e.files[0].path
-        print(f"Importando CSV: {file_path}")
-
-        try:
-            # Lê o CSV (ajuste se tiver cabeçalho ou não)
-            df = pd.read_csv(file_path, sep=";", encoding="utf-8", header=None)
-            df.columns = ["name", "unit", "quantidade", "price"]
-
-            with get_connection() as conn:
-                cursor = conn.cursor()
-                for _, row in df.iterrows():
-                    cursor.execute(
-                        "INSERT INTO produtos (name, unit, quantidade, price) VALUES (?, ?, ?, ?)",
-                        (row["name"], row["unit"], int(row["quantidade"]), float(row["price"]))
-                    )
-                conn.commit()
-
-            print("Produtos importados com sucesso!")
-            self.product_list()
-            self.page.update()
-
-        except Exception as ex:
-            print("Erro ao importar CSV:", ex)
+    # abre a página de cadastro
+    def _go_to_register(self):
+        from app.views.product_register_view import productsRegisterView
+        reg = productsRegisterView(self.page)
+        reg.build()
 
     def _go_back(self):
         from app.views.home_view import homeView

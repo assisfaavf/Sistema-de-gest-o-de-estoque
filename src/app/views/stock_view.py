@@ -18,7 +18,7 @@ class stockView:
         self.page.controls.clear()
 
         self.page.appbar = ft.AppBar(
-            title=ft.Text("Estoque", size=24, weight="bold"),
+            title=ft.Text("Entrada/saída", size=24, weight="bold"),
             leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self._go_back()),
         )
 
