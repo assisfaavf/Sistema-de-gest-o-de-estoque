@@ -28,7 +28,11 @@ class homeView:
       ft.Column([
         ft.Text('Bem vindo ao sistema de gestão de estoque', size=24, weight="bold"),
         ft.Text('Selecione uma opção no menu', size=16),
-      ])
+      ], 
+      expand=True,
+      alignment=ft.MainAxisAlignment.CENTER,
+      horizontal_alignment=ft.CrossAxisAlignment.CENTER
+      )
     )
 
     self.page.update()
@@ -41,6 +45,11 @@ class homeView:
 
 
   def _navigate(self, e):
+    #Fecha o menu ao selecioanr uma opção
+    self.page.drawer.open = False
+    self.page.update()
+
+    
     #Home
     if self.page.drawer.selected_index == 0:
       ...
