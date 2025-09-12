@@ -103,6 +103,6 @@ class productsRegisterView:
             print("Erro ao importar CSV:", ex)
 
     def _go_back(self):
-        from app.views.home_view import homeView
-        home = homeView(self.page)
-        home.build()
+        from app.views.product_view import productsView
+        products = productsView(self.page)
+        products.build()
