@@ -1,7 +1,8 @@
 import flet as ft
 from ..models.database import get_connection
+from app.views.base_view import BaseView
 
-class DashboardView:
+class DashboardView(BaseView):
   def __init__(self, page: ft.Page):
     self.page = page
     self.chart = ft.BarChart( #Criando estilização do gráfico
@@ -19,11 +20,8 @@ class DashboardView:
 
   def build(self):
     self.page.controls.clear()
+    self._build_layout()
 
-    self.page.appbar = ft.AppBar(
-      title=ft.Text('Estoque', size=24, weight="bold"),
-      leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click= lambda e: self._go_back())
-    )
 
     self.page.add(
       ft.Column([
