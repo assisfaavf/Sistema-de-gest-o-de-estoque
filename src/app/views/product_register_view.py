@@ -7,7 +7,7 @@ class productsRegisterView:
         self.page = page
         self.product_name = ft.TextField(label="Nome do produto")
         self.product_unit = ft.TextField(label="Unidade do produto")
-        self.product_quantity = ft.TextField(label="Quantidade do produto", on_submit=self._register_product)
+        self.product_quantity = ft.TextField(label="Quantidade do produto")
         self.product_price = ft.TextField(label="Preço do produto")
         self.list_products_view = ft.ListView()
 
@@ -17,6 +17,10 @@ class productsRegisterView:
         # Criar o FilePicker
         self.file_picker = ft.FilePicker(on_result=self._import_from_csv)
         self.page.overlay.append(self.file_picker)
+
+        # Criar snackbar e adicionar ao overlay
+        self.snack_bar = ft.SnackBar(content=ft.Text(""))
+        self.page.overlay.append(self.snack_bar)
 
     def build(self):
         self.page.controls.clear()
@@ -56,21 +60,32 @@ class productsRegisterView:
             price = float(self.product_price.value.strip())
             quantity = int(self.product_quantity.value.strip())
         except:
-            print('O preço e a quantidade devem ser números!')
+            self._show_message("O preço e a quantidade devem ser números!", error=True)
             return
 
         if not name or not unit:
-            print('Preencha o nome e a unidade do produto!')
+            self._show_message("Preencha o nome e a unidade do produto!", error=True)
             return
 
         # salva no banco
         with get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute('INSERT INTO produtos (name, unit, quantidade, price) VALUES (?, ?, ?, ?)',
-                           (name, unit, quantity, price))
-            conn.commit()
+           
+            # 🔎 Verificar se já existe produto com mesmo nome e unidade
+            cursor.execute("SELECT COUNT(*) FROM produtos WHERE name=?", (name))
+            exists = cursor.fetchone()[0]
 
-        print('Produto cadastrado com sucesso!')
+            if exists > 0:
+                self._show_message("Produto já cadastrado!", error=True)
+                return
+
+            # 💾 Se não existir, cadastra normalmente
+            cursor.execute(
+                'INSERT INTO produtos (name, unit, quantidade, price) VALUES (?, ?, ?, ?)',
+                (name, unit, quantity, price)
+            )
+            
+            conn.commit()
 
         # adiciona na lista temporária
         self.recent_products.append({
@@ -80,7 +95,7 @@ class productsRegisterView:
             "price": price
         })
 
-        # atualiza lista visual
+        self._show_message("Produto cadastrado com sucesso!")
         self._update_recent_list()
 
         # limpa campos
@@ -90,7 +105,6 @@ class productsRegisterView:
         self.product_price.value = ""
         self.page.update()
 
-    # atualiza lista de produtos cadastrados nesta sessão
     def _update_recent_list(self):
         self.list_products_view.controls.clear()
         for p in self.recent_products:
@@ -104,34 +118,53 @@ class productsRegisterView:
             )
         self.page.update()
 
-    # Função para importar CSV (mantém igual, pode depois também adicionar os importados na lista se quiser)
+        # Importa CSV
     def _import_from_csv(self, e: ft.FilePickerResultEvent):
         if not e.files:
             return
 
         file_path = e.files[0].path
-        print(f"Importando CSV: {file_path}")
-
         try:
             df = pd.read_csv(file_path, sep=";", encoding="utf-8", header=None)
             df.columns = ["name", "unit", "quantidade", "price"]
 
             with get_connection() as conn:
                 cursor = conn.cursor()
+                skipped = 0  # Contador de produtos duplicados
                 for _, row in df.iterrows():
+                    # Verificar se produto já existe
+                    cursor.execute("SELECT COUNT(*) FROM produtos WHERE name=? AND unit=?", 
+                                (row["name"], row["unit"]))
+                    exists = cursor.fetchone()[0]
+
+                    if exists > 0:
+                        skipped += 1  # Produto duplicado, não insere
+                        continue
+
+                    # Inserir produto se não existir
                     cursor.execute(
                         "INSERT INTO produtos (name, unit, quantidade, price) VALUES (?, ?, ?, ?)",
                         (row["name"], row["unit"], int(row["quantidade"]), float(row["price"]))
                     )
+
                 conn.commit()
 
-            print("Produtos importados com sucesso!")
-            self.page.update()
+            if skipped > 0:
+                self._show_message(f"Produtos importados com sucesso! ({skipped} duplicados ignorados)")
+            else:
+                self._show_message("Produtos importados com sucesso!")
 
         except Exception as ex:
-            print("Erro ao importar CSV:", ex)
-
+            self._show_message(f"Erro ao importar CSV: {ex}", error=True)
+            
     def _go_back(self):
         from app.views.product_view import productsView
         products = productsView(self.page)
         products.build()
+
+    # Função para exibir alertas e erros
+    def _show_message(self, message: str, error: bool = False):
+        self.snack_bar.content = ft.Text(message, color="white")
+        self.snack_bar.bgcolor = "red" if error else "green"
+        self.snack_bar.open = True
+        self.page.update()

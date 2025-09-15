@@ -15,6 +15,10 @@ class stockView(BaseView):
         self.selected_product_id = None
         self.product_quantity_field = ft.TextField(label="Quantidade")
 
+            # Criar snackbar e adicionar ao overlay
+        self.snack_bar = ft.SnackBar(content=ft.Text(""))
+        self.page.overlay.append(self.snack_bar)
+
     def build(self):
         self.page.controls.clear()
         self._build_layout()
@@ -88,6 +92,7 @@ class stockView(BaseView):
 
         if not id_product:
             print("Selecione um produto!")
+            self._show_message("Selecione um produto!", error=True)
             return
 
         try:
@@ -96,6 +101,7 @@ class stockView(BaseView):
                 raise ValueError
         except:
             print("Digite uma quantidade válida!")
+            self._show_message("Digite uma quantidade válida!", error=True)
             return
 
         with get_connection() as conn:
@@ -105,6 +111,7 @@ class stockView(BaseView):
 
             if not result:
                 print("Produto não encontrado!")
+                self._show_message("Produto não encontrado!", error=True)
                 return
 
             current_quantity = result[0]
@@ -112,12 +119,23 @@ class stockView(BaseView):
 
             if new_quantity < 0:
                 print("Quantidade insuficiente no estoque!")
+                self._show_message("Quantidade insuficiente no estoque!", error=True)
                 return
 
             cursor.execute("UPDATE produtos SET quantidade = ? WHERE id=?", (new_quantity, id_product))
             conn.commit()
 
             print("Estoque atualizado com sucesso!")
+            self._show_message("Estoque atualizado com sucesso!")
             self.product_quantity_field.value = ""
             self.page.update()
+
+
+
+        # Função para exibir alertas e erros
+    def _show_message(self, message: str, error: bool = False):
+        self.snack_bar.content = ft.Text(message, color="white")
+        self.snack_bar.bgcolor = "red" if error else "green"
+        self.snack_bar.open = True
+        self.page.update()
 

@@ -11,6 +11,10 @@ class supplierView(BaseView):
     self.supplier_email = ft.TextField(label="email do fornecedor", on_submit=self._register_supplier)
     self.list_supplier_view = ft.ListView()
 
+    # Criar snackbar e adicionar ao overlay
+    self.snack_bar = ft.SnackBar(content=ft.Text(""))
+    self.page.overlay.append(self.snack_bar)
+
 
 
   def build(self):
@@ -44,6 +48,7 @@ class supplierView(BaseView):
     
     if not name or not cellphone or not email: #Verifica se os campos nome, telefone e email foram preenchidos
       print('Preencha todos os campos!')
+      self._show_message("Preencha todos os campos!", error=True)
       return
     
     with get_connection() as conn:
@@ -52,6 +57,7 @@ class supplierView(BaseView):
       conn.commit()
 
       print('Forncedor cadastrado com sucesso!')
+      self._show_message("Forncedor cadastrado com sucesso!")
 
       self.supplier_name.value = ""
       self.supplier_cellphone.value = ""
@@ -77,7 +83,9 @@ class supplierView(BaseView):
         self.page.update()
 
 
-  def _go_back(self):
-    from app.views.home_view import homeView
-    home = homeView(self.page)
-    home.build()
+  # Função para exibir alertas e erros
+  def _show_message(self, message: str, error: bool = False):
+    self.snack_bar.content = ft.Text(message, color="white")
+    self.snack_bar.bgcolor = "red" if error else "green"
+    self.snack_bar.open = True
+    self.page.update()
