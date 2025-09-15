@@ -1,8 +1,9 @@
 import flet as ft
 from ..models.database import get_connection
+from app.views.base_view import BaseView 
 
 
-class stockView:
+class stockView(BaseView):
     def __init__(self, page: ft.Page):
         self.page = page
         self.product_search_field = ft.TextField(
@@ -16,11 +17,7 @@ class stockView:
 
     def build(self):
         self.page.controls.clear()
-
-        self.page.appbar = ft.AppBar(
-            title=ft.Text("Entrada/saída", size=24, weight="bold"),
-            leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self._go_back()),
-        )
+        self._build_layout()
 
         self.page.add(
             ft.Column(
@@ -124,7 +121,3 @@ class stockView:
             self.product_quantity_field.value = ""
             self.page.update()
 
-    def _go_back(self):
-        from app.views.home_view import homeView
-        home = homeView(self.page)
-        home.build()

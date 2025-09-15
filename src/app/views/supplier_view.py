@@ -1,8 +1,9 @@
 import flet as ft
 from ..models.database import get_connection
+from app.views.base_view import BaseView
 
 
-class supplierView:
+class supplierView(BaseView):
   def __init__(self, page:ft.Page):
     self.page = page
     self.supplier_name = ft.TextField(label="Nome do fornecedor")
@@ -14,11 +15,7 @@ class supplierView:
 
   def build(self):
     self.page.controls.clear()
-
-    self.page.appbar = ft.AppBar(
-      title=ft.Text('Cadastro de Fornecedores', size=24, weight="bold"),
-      leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click= lambda e: self._go_back())
-    )
+    self._build_layout()
 
     self.page.add(
       ft.Column([

@@ -11,6 +11,9 @@ class productsRegisterView:
         self.product_price = ft.TextField(label="Preço do produto")
         self.list_products_view = ft.ListView()
 
+        # lista temporária só desta tela
+        self.recent_products = []
+
         # Criar o FilePicker
         self.file_picker = ft.FilePicker(on_result=self._import_from_csv)
         self.page.overlay.append(self.file_picker)
@@ -38,14 +41,14 @@ class productsRegisterView:
                     ))
                 ], alignment=ft.MainAxisAlignment.CENTER),
                 ft.Divider(),
-                ft.Text("Produtos cadastrados", size=20, weight="bold"),
+                ft.Text("Produtos cadastrados nesta sessão:", size=20, weight="bold"),
                 self.list_products_view,
             ], expand=True, scroll=ft.ScrollMode.AUTO)
         )
 
         self.page.update()
 
-    # Função de cadastro manual (já existia)
+    # Função de cadastro manual
     def _register_product(self, e):
         name = self.product_name.value.strip()
         unit = self.product_unit.value.strip()
@@ -60,6 +63,7 @@ class productsRegisterView:
             print('Preencha o nome e a unidade do produto!')
             return
 
+        # salva no banco
         with get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('INSERT INTO produtos (name, unit, quantidade, price) VALUES (?, ?, ?, ?)',
@@ -68,13 +72,39 @@ class productsRegisterView:
 
         print('Produto cadastrado com sucesso!')
 
+        # adiciona na lista temporária
+        self.recent_products.append({
+            "name": name,
+            "unit": unit,
+            "quantidade": quantity,
+            "price": price
+        })
+
+        # atualiza lista visual
+        self._update_recent_list()
+
+        # limpa campos
         self.product_name.value = ""
         self.product_unit.value = ""
         self.product_quantity.value = ""
         self.product_price.value = ""
         self.page.update()
 
-    # Função para importar CSV
+    # atualiza lista de produtos cadastrados nesta sessão
+    def _update_recent_list(self):
+        self.list_products_view.controls.clear()
+        for p in self.recent_products:
+            self.list_products_view.controls.append(
+                ft.Card(
+                    content=ft.ListTile(
+                        title=ft.Text(p["name"]),
+                        subtitle=ft.Text(f"Unidade: {p['unit']} | Qtd: {p['quantidade']} | Preço: R${p['price']:.2f}")
+                    )
+                )
+            )
+        self.page.update()
+
+    # Função para importar CSV (mantém igual, pode depois também adicionar os importados na lista se quiser)
     def _import_from_csv(self, e: ft.FilePickerResultEvent):
         if not e.files:
             return
@@ -83,7 +113,6 @@ class productsRegisterView:
         print(f"Importando CSV: {file_path}")
 
         try:
-            # Lê o CSV (ajuste se tiver cabeçalho ou não)
             df = pd.read_csv(file_path, sep=";", encoding="utf-8", header=None)
             df.columns = ["name", "unit", "quantidade", "price"]
 

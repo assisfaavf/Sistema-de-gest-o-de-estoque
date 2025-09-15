@@ -1,9 +1,10 @@
 import flet as ft
 import pandas as pd
 from ..models.database import get_connection
+from app.views.base_view import BaseView
 
 
-class productsView:
+class productsView(BaseView):
     def __init__(self, page: ft.Page):
         self.page = page
         self.search_field = ft.TextField(
@@ -19,10 +20,11 @@ class productsView:
 
     def build(self):
         self.page.controls.clear()
+        self._build_layout()
 
         self.page.appbar = ft.AppBar(
             title=ft.Text('Produtos em estoque', size=24, weight="bold"),
-            leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda e: self._go_back()),
+            leading=ft.IconButton(ft.Icons.MENU, on_click=lambda e: self._open_drawer()),
             actions=[
                 ft.IconButton(ft.Icons.ADD, tooltip="Cadastrar produto", on_click=lambda e: self._go_to_register(), icon_size=40)
             ]
