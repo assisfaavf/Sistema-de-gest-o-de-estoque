@@ -1,4 +1,4 @@
-import flet as ft
+import flet as ft # type: ignore
 from app.views.base_view import BaseView
 
 class homeView(BaseView):
