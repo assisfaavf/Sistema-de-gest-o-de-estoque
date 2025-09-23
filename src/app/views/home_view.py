@@ -22,7 +22,7 @@ class homeView(BaseView):
                             text_align=ft.TextAlign.CENTER
                         ),
                         ft.Image(
-                            src="..assets/estoque.jpg",
+                            src="assets/estoque.jpg",
                             expand=True,
                             fit=ft.ImageFit.CONTAIN,  # pode trocar por COVER
                         ),
