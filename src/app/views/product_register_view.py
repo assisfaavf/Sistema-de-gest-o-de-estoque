@@ -125,20 +125,13 @@ class productsRegisterView:
             return
 
         try:
-            file = e.files[0]
-
-            # Caso 1: rodando local → usar caminho
-            if file.path:
-                df = pd.read_csv(file.path, sep=";", encoding="utf-8", header=None)
-
-            # Caso 2: rodando na web (Render) → usar conteúdo carregado
-            elif file.content is not None:
-                df = pd.read_csv(io.StringIO(file.content.decode("utf-8")), sep=";", header=None)
-
-            else:
+            # No modo web, usamos os bytes em memória
+            file_bytes = e.files[0].bytes
+            if file_bytes is None:
                 self._show_message("Não foi possível ler o arquivo CSV.", error=True)
                 return
 
+            df = pd.read_csv(io.BytesIO(file_bytes), sep=";", encoding="utf-8", header=None)
             df.columns = ["name", "unit", "quantidade", "price"]
 
             with get_connection() as conn:
@@ -158,6 +151,7 @@ class productsRegisterView:
                         "INSERT INTO produtos (name, unit, quantidade, price) VALUES (?, ?, ?, ?)",
                         (row["name"], row["unit"], int(row["quantidade"]), float(row["price"]))
                     )
+
                 conn.commit()
 
             if skipped > 0:
