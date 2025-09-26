@@ -1,6 +1,7 @@
 import flet as ft
 import pandas as pd
 from ..models.database import get_connection
+import io
 
 class productsRegisterView:
     def __init__(self, page: ft.Page):
@@ -72,7 +73,7 @@ class productsRegisterView:
             cursor = conn.cursor()
            
             # 🔎 Verificar se já existe produto com mesmo nome e unidade
-            cursor.execute("SELECT COUNT(*) FROM produtos WHERE name=?", (name))
+            cursor.execute("SELECT COUNT(*) FROM produtos WHERE name=?", (name,))
             exists = cursor.fetchone()[0]
 
             if exists > 0:
@@ -123,30 +124,40 @@ class productsRegisterView:
         if not e.files:
             return
 
-        file_path = e.files[0].path
         try:
-            df = pd.read_csv(file_path, sep=";", encoding="utf-8", header=None)
+            file = e.files[0]
+
+            # Caso 1: rodando local → usar caminho
+            if file.path:
+                df = pd.read_csv(file.path, sep=";", encoding="utf-8", header=None)
+
+            # Caso 2: rodando na web (Render) → usar conteúdo carregado
+            elif file.content is not None:
+                df = pd.read_csv(io.StringIO(file.content.decode("utf-8")), sep=";", header=None)
+
+            else:
+                self._show_message("Não foi possível ler o arquivo CSV.", error=True)
+                return
+
             df.columns = ["name", "unit", "quantidade", "price"]
 
             with get_connection() as conn:
                 cursor = conn.cursor()
-                skipped = 0  # Contador de produtos duplicados
+                skipped = 0
                 for _, row in df.iterrows():
-                    # Verificar se produto já existe
-                    cursor.execute("SELECT COUNT(*) FROM produtos WHERE name=? AND unit=?", 
-                                (row["name"], row["unit"]))
+                    cursor.execute(
+                        "SELECT COUNT(*) FROM produtos WHERE name=? AND unit=?",
+                        (row["name"], row["unit"])
+                    )
                     exists = cursor.fetchone()[0]
-
                     if exists > 0:
-                        skipped += 1  # Produto duplicado, não insere
+                        skipped += 1
                         continue
 
-                    # Inserir produto se não existir
                     cursor.execute(
                         "INSERT INTO produtos (name, unit, quantidade, price) VALUES (?, ?, ?, ?)",
                         (row["name"], row["unit"], int(row["quantidade"]), float(row["price"]))
                     )
-
                 conn.commit()
 
             if skipped > 0:
